@@ -367,3 +367,92 @@ from		sinhvien sv left outer join (select		masv
 										from		ketqua kq
 										where		diem<4) as tam on tam.masv = sv.masv 
 						inner join khoa kh on sv.makh=kh.makh
+--D19 Danh sách những sinh viên không có môn nào nhỏ hơn 4 điểm, gồm các thông tin: Họ tên sinh
+--viên, Tên khoa, Giới tính. Trong đó Giới tính hiển thị Nam/Nữ
+select hotensv = hosv+ ' '+tensv, tenkh,gioitinh = case when phai = 1 then N'Nam' else N'Nu' end, diem
+from sinhvien sv , khoa kh , ketqua kq 
+where	sv.makh = kh.makh and 
+		kq.masv = sv.masv   and kq.masv not in (
+											select	masv
+											from	ketqua kq 
+											where	 diem<4	)  
+--D20 . Cho biết danh sách những môn không có điểm thi nhỏ hơn 4, gồm các thông tin: Mã môn, Tên
+--Môn
+select kq.mamh , tenmh, diem
+from sinhvien sv , khoa kh , ketqua kq , monhoc 
+where	sv.makh = kh.makh and 
+		kq.masv = sv.masv   and kq.masv not in (
+											select	masv
+											from	ketqua kq 
+											where	 diem<4	)
+--21. Cho biết những khoa không có sinh viên rớt, sinh viên rớt nếu điểm thi của môn nhỏ hơn 5,
+--gồm các thông tin: Mã khoa, Tên khoa  
+
+select kh.makh,tenkh
+from sinhvien sv , khoa kh 
+where	sv.makh = kh.makh and 
+							masv not in (
+											select	masv
+											from	ketqua kq 
+											where	 diem>5	)
+
+--22.Thống kê số sinh viên đậu và số sinh viên rớt của từng môn, biết rằng sinh viên rớt khi điểm
+--của môn nhỏ hơn 5, gồm có: Mã môn, Tên môn, Số sinh viên đậu, Số sinh viên rớt (kể cả những
+--môn chưa có sinh viên dự thi)
+
+select mh.mamh ,tenmh , N'So sinh vien dau ' = sum(case when diem > 5 then 1 end) , N'So sinh vien rot ' = sum(case when diem < 5 then 1 end)
+from ketqua kq right outer join monhoc mh on kq.mamh = mh.mamh
+group by mh.mamh, tenmh 
+--D23 Cho biết môn nào không có sinh viên rớt, gồm các thông tin: Mã môn, Tên môn
+select  mh.mamh , tenmh 
+from monhoc mh , ketqua kq, sinhvien sv
+where kq.masv = sv.masv and diem < 5
+group by mh.mamh , tenmh
+having count(*) >0
+--D24. Danh sách sinh viên không có môn nào rớt, thông tin gồm: Mã sinh viên, Họ tên, Mã khoa
+select  sv.masv , N'Ten sv'  = hosv + ' '+tensv , makh  
+from monhoc mh , ketqua kq, sinhvien sv
+where kq.mamh = mh.mamh and diem < 5
+group by sv.masv, makh , hosv + ' '+tensv
+having count(*) >1
+--d25
+--D26 Cho biết danh sách những khoa có nhiều hơn 10 sinh viên, gồm Mã khoa, Tên khoa, Tổng số
+--sinh viên của khoa
+select kh.tenkh , N'Tong so sinh vien cua khoa' = count(sv.masv)
+from khoa kh , sinhvien sv
+where sv.makh  = kh.makh	
+group by kh.tenkh 
+having count(sv.masv) >=2	
+--D27. Danh sách những sinh viên thi nhiều hơn 3 môn, gồm có Mã sinh viên, Họ tên sinh viên, Số môn
+--thi
+select sv.masv , N'Ho ten sv' = hosv + ' ' +tensv , N'So mon thi' = count(mh.mamh)
+from  sinhvien sv, monhoc mh , ketqua kq
+where	 mh.mamh = kq.mamh	and
+		kq.masv = sv.masv
+group by sv.masv, hosv,tensv
+having count(mh.mamh) >=3	
+---28. Cho biết khoa có 3 sinh viên nam trở lên, thông tin gồm có: Mã khoa, Tên khoa, Tổng số sinh
+--viên nam
+
+select kh.makh, tenkh , N'Tong so sinh vien' = sum(case when phai = 1 then 1 end)
+from khoa kh , sinhvien sv
+where kh.makh  = sv.makh
+group by kh.makh, kh.tenkh
+having sum(case when phai = 1 then 1 end) >=1	
+--29. Danh sách những sinh viên có trung bình điểm thi lớn hơn 4, gồm các thông tin sau: Họ tên
+--sinh viên, Tên khoa, Giới tính, Điểm trung bình các môn
+
+select		N'Ho ten sv' = hosv + ' ' +tensv, kh.tenkh, N'gioi tinh' = case when phai  = 1 then 'Nam' else 'Nu' end,
+			N'Diem trung binh cac mon' = AVG(diem)
+from		sinhvien sv, khoa kh, ketqua kq
+where		sv.masv = kq.masv and
+			sv.makh = kh.makh 
+group by	hosv, tensv , kh.tenkh, phai
+having		AVG(diem) >4
+--30--Cho biết trung bình điểm thi của từng môn, chỉ lấy môn nào có trung bình điểm thi lớn hơn 6,
+--thông tin gồm có: Mã môn, Tên môn, Trung bình điểm
+select mh.mamh , tenmh , N'Diem TB' = AVG(diem) 
+from monhoc mh , ketqua kq
+where mh.mamh = kq.mamh 
+group  by mh.mamh , tenmh
+having AVG(diem) >6
